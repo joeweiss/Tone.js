@@ -4,7 +4,11 @@ import { optionsFromArguments } from "../util/Defaults";
 import { onContextClose, onContextInit } from "./ContextInitialization";
 import { Gain } from "./Gain";
 import { Param } from "./Param";
-import { connectSeries, ToneAudioNode, ToneAudioNodeOptions } from "./ToneAudioNode";
+import {
+	connectSeries,
+	ToneAudioNode,
+	ToneAudioNodeOptions,
+} from "./ToneAudioNode";
 
 interface DestinationOptions extends ToneAudioNodeOptions {
 	volume: Decibels;
@@ -27,14 +31,14 @@ interface DestinationOptions extends ToneAudioNodeOptions {
  * @category Core
  */
 export class Destination extends ToneAudioNode<DestinationOptions> {
-
 	readonly name: string = "Destination";
+	chainItems: Array<AudioNode | ToneAudioNode> = [];
 
 	input: Volume = new Volume({ context: this.context });
 	output: Gain = new Gain({ context: this.context });
 
 	/**
-	 * The volume of the master output in decibels. -Infinity is silent, and 0 is no change. 
+	 * The volume of the master output in decibels. -Infinity is silent, and 0 is no change.
 	 * @example
 	 * const osc = new Tone.Oscillator().toDestination();
 	 * osc.start();
@@ -45,14 +49,24 @@ export class Destination extends ToneAudioNode<DestinationOptions> {
 
 	constructor(options: Partial<DestinationOptions>);
 	constructor() {
-
 		super(optionsFromArguments(Destination.getDefaults(), arguments));
-		const options = optionsFromArguments(Destination.getDefaults(), arguments);
+		const options = optionsFromArguments(
+			Destination.getDefaults(),
+			arguments
+		);
 
-		connectSeries(this.input, this.output, this.context.rawContext.destination);
+		connectSeries(
+			this.input,
+			this.output,
+			this.context.rawContext.destination
+		);
 
 		this.mute = options.mute;
-		this._internalChannels = [this.input, this.context.rawContext.destination, this.output];
+		this._internalChannels = [
+			this.input,
+			this.context.rawContext.destination,
+			this.output,
+		];
 	}
 
 	static getDefaults(): DestinationOptions {
@@ -90,6 +104,7 @@ export class Destination extends ToneAudioNode<DestinationOptions> {
 	 */
 	chain(...args: Array<AudioNode | ToneAudioNode>): this {
 		this.input.disconnect();
+		this.chainItems = args;
 		args.unshift(this.input);
 		args.push(this.output);
 		connectSeries(...args);
@@ -119,10 +134,10 @@ export class Destination extends ToneAudioNode<DestinationOptions> {
 // 	INITIALIZATION
 //-------------------------------------
 
-onContextInit(context => {
+onContextInit((context) => {
 	context.destination = new Destination({ context });
 });
 
-onContextClose(context => {
+onContextClose((context) => {
 	context.destination.dispose();
 });
